@@ -189,6 +189,29 @@ export async function onRequestPost(context) {
         playerId
     } = data;
 
+
+    // =========================
+    // SOLO PASSWORD
+    // =========================
+
+    if (action === "solo") {
+
+        if (!env.ROOM_PASSWORD ||
+            password !== env.ROOM_PASSWORD) {
+
+            return error("Incorrect password", 403);
+
+        }
+
+        return success();
+
+    }
+
+
+    // =========================
+    // VERIFY ROOM NAME
+    // =========================
+
     if (typeof room !== "string" ||
         !room.trim() ||
         room.trim().length > 30) {
