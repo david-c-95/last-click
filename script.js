@@ -1,4 +1,3 @@
-
 // =========================
 // CONFIGURATION
 // =========================
@@ -15,9 +14,11 @@ const SMALL_EXPLOSION_POWER = 0.25;
 const WIN_EXPLOSION_COUNT = 100;
 const WIN_EXPLOSION_POWER = 1.5;
 
+const API_URL = "/api";
+
 
 // =========================
-// HTML ELEMENTS
+// HTML ELEMENTS - SOLO
 // =========================
 
 const mainMenu = document.getElementById("mainMenu");
@@ -34,12 +35,50 @@ const gameScore = document.getElementById("gameScore");
 
 
 // =========================
+// HTML ELEMENTS - ONLINE
+// =========================
+
+const onlineMenu = document.getElementById("onlineMenu");
+const onlineLobby = document.getElementById("onlineLobby");
+
+const onlineBackButton = document.getElementById("onlineBackButton");
+
+const nicknameInput = document.getElementById("nicknameInput");
+const roomInput = document.getElementById("roomInput");
+const passwordInput = document.getElementById("passwordInput");
+
+const createRoomButton = document.getElementById("createRoomButton");
+const joinRoomButton = document.getElementById("joinRoomButton");
+
+const onlineStatus = document.getElementById("onlineStatus");
+
+const lobbyRoomName = document.getElementById("lobbyRoomName");
+const playerCount = document.getElementById("playerCount");
+const playerList = document.getElementById("playerList");
+const lobbyStatus = document.getElementById("lobbyStatus");
+
+const leaveRoomButton = document.getElementById("leaveRoomButton");
+const startGameButton = document.getElementById("startGameButton");
+
+
+// =========================
 // GAME VARIABLES
 // =========================
 
 let trapIndex;
 let safeClicks;
 let gameOver;
+
+
+// =========================
+// ONLINE VARIABLES
+// =========================
+
+let currentRoom = null;
+let currentPlayerId = null;
+let currentNickname = null;
+let isHost = false;
+let onlineBusy = false;
 
 
 // =========================
@@ -226,15 +265,11 @@ function explodePopcorn(x, y, count = 100, power = 1) {
 
         document.body.appendChild(particle);
 
-        // Remove particle after animation
-
         particle.addEventListener("animationend", () => {
 
             particle.remove();
 
         }, { once: true });
-
-        // Fallback cleanup
 
         setTimeout(() => {
 
@@ -344,7 +379,7 @@ function startSoloGame() {
 
 
 // =========================
-// HANDLE CLICK
+// HANDLE SOLO CLICK
 // =========================
 
 function handleClick(index, button) {
@@ -405,7 +440,7 @@ function handleClick(index, button) {
 
 
 // =========================
-// END GAME
+// END SOLO GAME
 // =========================
 
 function endGame(win) {
@@ -437,13 +472,7 @@ function endGame(win) {
         gameStatus.textContent = "YOU WIN!";
         gameStatus.className = "win";
 
-
-        // Random victory sound
-
         playRandomSound("win");
-
-
-        // Mega popcorn explosion
 
         const rect = gameGrid.getBoundingClientRect();
 
@@ -453,9 +482,6 @@ function endGame(win) {
             WIN_EXPLOSION_COUNT,
             WIN_EXPLOSION_POWER
         );
-
-
-        // Green glow
 
         gameGrid.classList.add("victory-glow");
 
@@ -469,18 +495,11 @@ function endGame(win) {
         gameStatus.textContent = "GAME OVER";
         gameStatus.className = "lose";
 
-
-        // Random defeat sound
-
         playRandomSound("lose");
-
-
-        // Shake cylinder
 
         gameGrid.classList.add("shake");
 
     }
-
 
     restartButton.hidden = false;
 
@@ -488,7 +507,256 @@ function endGame(win) {
 
 
 // =========================
-// NAVIGATION
+// ONLINE API
+// =========================
+
+async function apiRequest(action, payload = {}) {
+
+    const response = await fetch(API_URL, {
+
+        method: "POST",
+
+        headers: {
+            "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+            ...payload,
+            action
+        })
+
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || data.error) {
+
+        throw new Error(
+            data.error || "Server error"
+        );
+
+    }
+
+    return data;
+
+}
+
+
+// =========================
+// ONLINE STATUS
+// =========================
+
+function setOnlineStatus(message, type = "") {
+
+    onlineStatus.textContent = message;
+    onlineStatus.className = type;
+
+}
+
+
+// =========================
+// ONLINE LOADING STATE
+// =========================
+
+function setOnlineBusy(busy) {
+
+    onlineBusy = busy;
+
+    createRoomButton.disabled = busy;
+    joinRoomButton.disabled = busy;
+    onlineBackButton.disabled = busy;
+
+    nicknameInput.disabled = busy;
+    roomInput.disabled = busy;
+    passwordInput.disabled = busy;
+
+}
+
+
+// =========================
+// CREATE OR JOIN ROOM
+// =========================
+
+async function connectToRoom(action) {
+
+    if (onlineBusy) {
+        return;
+    }
+
+    const nickname = nicknameInput.value.trim();
+    const room = roomInput.value.trim();
+    const password = passwordInput.value;
+
+    if (!nickname || !room) {
+
+        setOnlineStatus(
+            "Enter a nickname and a room name.",
+            "error"
+        );
+
+        return;
+
+    }
+
+    if (action === "create" && !password) {
+
+        setOnlineStatus(
+            "Enter the creation password.",
+            "error"
+        );
+
+        return;
+
+    }
+
+    setOnlineBusy(true);
+
+    setOnlineStatus(
+        action === "create"
+            ? "Creating room..."
+            : "Joining room..."
+    );
+
+    try {
+
+        const payload = {
+            nickname,
+            room
+        };
+
+        if (action === "create") {
+            payload.password = password;
+        }
+
+        const data = await apiRequest(
+            action,
+            payload
+        );
+
+        currentRoom = data.room;
+        currentPlayerId = data.playerId;
+        currentNickname = nickname;
+
+        isHost = action === "create";
+
+        passwordInput.value = "";
+
+        setOnlineStatus("");
+
+        openLobby();
+
+    }
+
+    catch (error) {
+
+        setOnlineStatus(
+            error.message,
+            "error"
+        );
+
+    }
+
+    finally {
+
+        setOnlineBusy(false);
+
+    }
+
+}
+
+
+// =========================
+// OPEN LOBBY
+// =========================
+
+function openLobby() {
+
+    onlineMenu.hidden = true;
+    onlineLobby.hidden = false;
+
+    lobbyRoomName.textContent = currentRoom;
+
+    // Temporary local player display.
+    // Server synchronization will be added next.
+
+    renderLocalPlayer();
+
+    playerCount.textContent = "Players: --/10";
+
+    lobbyStatus.textContent =
+        "Waiting for players...";
+
+    startGameButton.hidden = !isHost;
+    startGameButton.disabled = true;
+
+}
+
+
+// =========================
+// DISPLAY LOCAL PLAYER
+// =========================
+
+function renderLocalPlayer() {
+
+    playerList.innerHTML = "";
+
+    const item = document.createElement("div");
+    item.className = "player-item";
+
+    const name = document.createElement("span");
+    name.className = "player-name";
+    name.textContent = currentNickname;
+
+    const role = document.createElement("span");
+
+    if (isHost) {
+
+        role.className = "player-host";
+        role.textContent = "HOST • YOU";
+
+    }
+
+    else {
+
+        role.className = "player-you";
+        role.textContent = "YOU";
+
+    }
+
+    item.appendChild(name);
+    item.appendChild(role);
+
+    playerList.appendChild(item);
+
+}
+
+
+// =========================
+// LEAVE ROOM
+// =========================
+
+function leaveRoom() {
+
+    // Server-side departure will be added next.
+    // For now, this only closes the local lobby.
+
+    currentRoom = null;
+    currentPlayerId = null;
+    currentNickname = null;
+    isHost = false;
+
+    playerList.innerHTML = "";
+
+    onlineLobby.hidden = true;
+    onlineMenu.hidden = false;
+
+    setOnlineStatus("");
+
+}
+
+
+// =========================
+// SOLO NAVIGATION
 // =========================
 
 soloButton.addEventListener("click", () => {
@@ -501,7 +769,10 @@ soloButton.addEventListener("click", () => {
 });
 
 
-restartButton.addEventListener("click", startSoloGame);
+restartButton.addEventListener(
+    "click",
+    startSoloGame
+);
 
 
 backButton.addEventListener("click", () => {
@@ -517,8 +788,51 @@ backButton.addEventListener("click", () => {
 });
 
 
+// =========================
+// ONLINE NAVIGATION
+// =========================
+
 onlineButton.addEventListener("click", () => {
 
-    alert("Online mode coming soon!");
+    mainMenu.hidden = true;
+    onlineMenu.hidden = false;
+
+    setOnlineStatus("");
 
 });
+
+
+onlineBackButton.addEventListener("click", () => {
+
+    if (onlineBusy) {
+        return;
+    }
+
+    passwordInput.value = "";
+
+    onlineMenu.hidden = true;
+    mainMenu.hidden = false;
+
+    setOnlineStatus("");
+
+});
+
+
+createRoomButton.addEventListener("click", () => {
+
+    connectToRoom("create");
+
+});
+
+
+joinRoomButton.addEventListener("click", () => {
+
+    connectToRoom("join");
+
+});
+
+
+leaveRoomButton.addEventListener(
+    "click",
+    leaveRoom
+);

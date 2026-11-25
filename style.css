@@ -543,3 +543,178 @@ footer {
     }
 
 }
+
+/* =========================
+   ONLINE MODE
+========================= */
+
+#onlineMenu h2,
+#onlineLobby h2 {
+    font-size: clamp(28px, 7vw, 42px);
+    letter-spacing: 3px;
+    margin-bottom: 12px;
+}
+
+.online-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    margin-top: 32px;
+    text-align: left;
+}
+
+.online-form label {
+    color: #999;
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.online-form input {
+    width: 100%;
+    padding: 16px;
+
+    background: #191919;
+    color: white;
+
+    border: 1px solid #333;
+    border-radius: 8px;
+
+    font-family: inherit;
+    font-size: 16px;
+
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.online-form input:focus {
+    border-color: #ef4444;
+}
+
+.online-form input::placeholder {
+    color: #666;
+}
+
+.online-form .action-button {
+    margin-top: 4px;
+}
+
+.form-separator {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    margin: 12px 0;
+
+    color: #666;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+.form-separator::before,
+.form-separator::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: #333;
+}
+
+#onlineStatus {
+    min-height: 20px;
+    margin-top: 8px;
+
+    text-align: center;
+    font-size: 14px;
+    color: #999;
+}
+
+#onlineStatus.error {
+    color: #ef4444;
+}
+
+#onlineStatus.success {
+    color: #22c55e;
+}
+
+
+/* =========================
+   ONLINE LOBBY
+========================= */
+
+#lobbyRoomName {
+    color: white;
+    overflow-wrap: anywhere;
+}
+
+#playerCount {
+    margin: 32px 0 16px;
+
+    color: #999;
+    font-size: 14px;
+    letter-spacing: 1px;
+}
+
+#playerList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.player-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
+    padding: 16px;
+
+    background: #191919;
+    border: 1px solid #333;
+    border-radius: 8px;
+
+    text-align: left;
+    overflow-wrap: anywhere;
+}
+
+.player-name {
+    font-weight: bold;
+    min-width: 0;
+}
+
+.player-host {
+    color: #ef4444;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.player-you {
+    color: #888;
+    font-size: 12px;
+}
+
+.player-eliminated {
+    opacity: 0.4;
+}
+
+#lobbyStatus {
+    margin: 24px 0;
+    color: #999;
+    font-size: 14px;
+}
+
+#startGameButton {
+    border-color: #ef4444;
+}
+
+.action-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.action-button:disabled:hover {
+    background: #191919;
+    border-color: #333;
+}
