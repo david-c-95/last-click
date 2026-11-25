@@ -1,8 +1,16 @@
 
+/* =========================
+   GLOBAL
+========================= */
+
 * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+}
+
+[hidden] {
+    display: none !important;
 }
 
 body {
@@ -10,9 +18,17 @@ body {
     background: #0d0d0d;
     color: #ffffff;
     min-height: 100dvh;
+
     display: flex;
     justify-content: center;
     align-items: center;
+
+    overflow-x: hidden;
+}
+
+button {
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .container {
@@ -21,6 +37,15 @@ body {
     padding: 24px;
     text-align: center;
 }
+
+.container:has(#soloGame:not([hidden])) {
+    max-width: 650px;
+}
+
+
+/* =========================
+   MAIN MENU
+========================= */
 
 header {
     margin-bottom: 48px;
@@ -32,7 +57,8 @@ h1 {
     letter-spacing: 4px;
 }
 
-h1 span {
+h1 span,
+h2 span {
     color: #ef4444;
 }
 
@@ -51,15 +77,20 @@ h1 span {
 .mode-button {
     width: 100%;
     padding: 24px;
+
     background: #191919;
     color: white;
+
     border: 1px solid #333;
     border-radius: 12px;
+
     cursor: pointer;
+
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 8px;
+
     transition: background 0.2s,
                 border-color 0.2s,
                 transform 0.2s;
@@ -86,9 +117,429 @@ h1 span {
     color: #999;
 }
 
+
+/* =========================
+   SOLO MODE
+========================= */
+
+#soloGame h2 {
+    font-size: clamp(28px, 7vw, 42px);
+    letter-spacing: 3px;
+    margin-bottom: 24px;
+}
+
+#gameStatus {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 24px;
+}
+
+#gameScore {
+    margin: 24px 0;
+    color: #999;
+}
+
+
+/* =========================
+   CYLINDER
+========================= */
+
+#gameGrid {
+    position: relative;
+
+    width: 100%;
+    max-width: 500px;
+    aspect-ratio: 1 / 1;
+
+    margin: 0 auto;
+    border-radius: 50%;
+
+    background: radial-gradient(
+        circle,
+        #454545,
+        #202020
+    );
+
+    border: 3px solid #555;
+
+    box-shadow:
+        0 12px 40px #000,
+        inset 0 0 20px #000;
+}
+
+
+/* Central axis */
+
+#gameGrid::before {
+    content: "";
+    position: absolute;
+
+    top: 50%;
+    left: 50%;
+
+    width: 18%;
+    aspect-ratio: 1 / 1;
+
+    transform: translate(-50%, -50%);
+
+    border-radius: 50%;
+    border: 3px solid #555;
+
+    background: radial-gradient(
+        circle,
+        #555 10%,
+        #222 20%,
+        #111 70%
+    );
+}
+
+
+/* =========================
+   CIRCULAR GAME BUTTONS
+========================= */
+
+.game-button {
+    position: absolute;
+
+    width: 27%;
+    height: 27%;
+    aspect-ratio: 1 / 1;
+
+    padding: 0;
+    overflow: hidden;
+
+    border-radius: 50%;
+    border: 3px solid #555;
+
+    background: #101010;
+    color: white;
+
+    transform: translate(-50%, -50%);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: clamp(24px, 8vw, 56px);
+    cursor: pointer;
+
+    box-shadow: inset 0 0 15px #000;
+
+    transition: background 0.2s,
+                border-color 0.2s,
+                transform 0.15s,
+                box-shadow 0.2s;
+}
+
+
+/* Button positions */
+
+.game-button:nth-child(1) {
+    top: 19%;
+    left: 50%;
+}
+
+.game-button:nth-child(2) {
+    top: 34.5%;
+    left: 77%;
+}
+
+.game-button:nth-child(3) {
+    top: 65.5%;
+    left: 77%;
+}
+
+.game-button:nth-child(4) {
+    top: 81%;
+    left: 50%;
+}
+
+.game-button:nth-child(5) {
+    top: 65.5%;
+    left: 23%;
+}
+
+.game-button:nth-child(6) {
+    top: 34.5%;
+    left: 23%;
+}
+
+
+/* =========================
+   CUSTOM IMAGE
+========================= */
+
+.game-button img {
+    display: block;
+
+    width: 75%;
+    height: 75%;
+
+    object-fit: contain;
+
+    pointer-events: none;
+    user-select: none;
+
+    transition: transform 0.2s;
+}
+
+
+/* =========================
+   BUTTON STATES
+========================= */
+
+.game-button:hover:not(:disabled) {
+    background: #303030;
+    border-color: #eeeeee;
+
+    transform: translate(-50%, -50%) scale(1.05);
+}
+
+.game-button:active:not(:disabled) {
+    transform: translate(-50%, -50%) scale(0.92);
+}
+
+.game-button:disabled {
+    cursor: default;
+}
+
+.game-button.safe {
+    background: #166534;
+    border-color: #22c55e;
+
+    box-shadow:
+        inset 0 0 15px #0005,
+        0 0 12px #22c55e40;
+}
+
+.game-button.trap {
+    background: #991b1b;
+    border-color: #ef4444;
+
+    box-shadow:
+        inset 0 0 15px #0005,
+        0 0 15px #ef444460;
+}
+
+
+/* =========================
+   NAVIGATION
+========================= */
+
+.back-button {
+    display: block;
+
+    background: transparent;
+    border: none;
+
+    color: #999;
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 1px;
+
+    cursor: pointer;
+
+    margin-bottom: 40px;
+    padding: 10px 0;
+}
+
+.back-button:hover {
+    color: white;
+}
+
+.action-button {
+    width: 100%;
+    max-width: 500px;
+
+    padding: 16px;
+    margin-top: 10px;
+
+    background: #191919;
+    border: 1px solid #333;
+    border-radius: 8px;
+
+    color: white;
+    font-weight: bold;
+    letter-spacing: 2px;
+
+    cursor: pointer;
+}
+
+.action-button:hover {
+    background: #292929;
+    border-color: #ef4444;
+}
+
+
+/* =========================
+   GAME STATUS
+========================= */
+
+.win {
+    color: #22c55e;
+}
+
+.lose {
+    color: #ef4444;
+}
+
+
+/* =========================
+   POPCORN EXPLOSION
+========================= */
+
+.popcorn-particle {
+    position: fixed;
+    z-index: 9999;
+
+    width: var(--size);
+    height: var(--size);
+
+    object-fit: contain;
+
+    pointer-events: none;
+    user-select: none;
+
+    animation: popcorn-explosion
+               var(--duration)
+               cubic-bezier(0.1, 0.7, 0.3, 1)
+               forwards;
+}
+
+@keyframes popcorn-explosion {
+
+    0% {
+        transform: translate(-50%, -50%)
+                   scale(0.3);
+        opacity: 1;
+    }
+
+    20% {
+        opacity: 1;
+    }
+
+    80% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: translate(
+                       calc(-50% + var(--x)),
+                       calc(-50% + var(--y))
+                   )
+                   rotate(var(--rotation))
+                   scale(1);
+
+        opacity: 0;
+    }
+
+}
+
+
+/* =========================
+   DEFEAT ANIMATION
+========================= */
+
+.shake {
+    animation: shake 0.4s ease-in-out;
+}
+
+@keyframes shake {
+
+    0%, 100% {
+        transform: translateX(0);
+    }
+
+    20%, 60% {
+        transform: translateX(-12px);
+    }
+
+    40%, 80% {
+        transform: translateX(12px);
+    }
+
+}
+
+
+/* =========================
+   VICTORY ANIMATION
+========================= */
+
+.victory-glow {
+    animation: victory-glow 1.5s ease-out;
+}
+
+@keyframes victory-glow {
+
+    0%, 100% {
+        box-shadow:
+            0 12px 40px #000,
+            inset 0 0 20px #000;
+    }
+
+    30% {
+        box-shadow:
+            0 0 40px #22c55e,
+            0 0 100px #22c55e80;
+    }
+
+}
+
+
+/* =========================
+   FOOTER
+========================= */
+
 footer {
     margin-top: 48px;
     font-size: 11px;
     color: #666;
     letter-spacing: 2px;
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 480px) {
+
+    .container {
+        padding: 16px;
+    }
+
+    .back-button {
+        margin-bottom: 24px;
+    }
+
+    .game-button {
+        border-width: 2px;
+    }
+
+    footer {
+        margin-top: 32px;
+    }
+
+}
+
+
+/* =========================
+   REDUCED MOTION
+========================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .popcorn-particle {
+        display: none;
+    }
+
+    .shake,
+    .victory-glow {
+        animation: none;
+    }
+
+    button {
+        transition: none;
+    }
+
 }

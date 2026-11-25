@@ -7,30 +7,65 @@
     <title>Last Click</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
     <main class="container">
 
-        <header>
-            <h1>LAST <span>CLICK</span></h1>
-            <p class="subtitle">How lucky are you?</p>
-        </header>
+        <!-- MAIN MENU -->
 
         <section id="mainMenu">
 
+            <header>
+                <h1>LAST <span>CLICK</span></h1>
+                <p class="subtitle">How lucky are you?</p>
+            </header>
+
             <button class="mode-button" id="soloButton">
                 <span class="mode-title">SOLO</span>
-                <span class="mode-description">Test your luck.</span>
+                <span class="mode-description">
+                    Test your luck.
+                </span>
             </button>
 
             <button class="mode-button" id="onlineButton">
                 <span class="mode-title">ONLINE</span>
-                <span class="mode-description">Be the last one standing.</span>
+                <span class="mode-description">
+                    Be the last one standing.
+                </span>
             </button>
 
         </section>
 
-        <footer>LAST CLICK — v0.1</footer>
+
+        <!-- SOLO MODE -->
+
+        <section id="soloGame" hidden>
+
+            <button class="back-button" id="backButton">
+                ← BACK TO MENU
+            </button>
+
+            <h2>SOLO <span>MODE</span></h2>
+
+            <p id="gameStatus" aria-live="polite">
+                Choose a popcorn
+            </p>
+
+            <div id="gameGrid"></div>
+
+            <p id="gameScore">Safe clicks: 0/5</p>
+
+            <button class="action-button"
+                    id="restartButton"
+                    hidden>
+                PLAY AGAIN
+            </button>
+
+        </section>
+
+
+        <footer>LAST CLICK — v0.2</footer>
 
     </main>
 

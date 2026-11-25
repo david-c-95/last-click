@@ -1,0 +1,18 @@
+{
+    "win": [
+        "sounds/win/win.mp3"
+    ],
+    "lose": [
+        "sounds/lose/lose1.mp3",
+        "sounds/lose/lose10.mp3",
+        "sounds/lose/lose11.mp3",
+        "sounds/lose/lose2.mp3",
+        "sounds/lose/lose3.mp3",
+        "sounds/lose/lose4.mp3",
+        "sounds/lose/lose5.mp3",
+        "sounds/lose/lose6.mp3",
+        "sounds/lose/lose7.mp3",
+        "sounds/lose/lose8.mp3",
+        "sounds/lose/lose9.mp3"
+    ]
+}
