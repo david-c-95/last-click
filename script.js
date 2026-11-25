@@ -1575,10 +1575,7 @@ backButton.addEventListener("click", () => {
 
 onlineButton.addEventListener("click", () => {
 
-    mainMenu.hidden = true;
-    onlineMenu.hidden = false;
-
-    setOnlineStatus("");
+    alert("Online mode coming soon!");
 
 });
 
