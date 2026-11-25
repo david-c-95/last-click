@@ -144,7 +144,7 @@ h2 span {
    CYLINDER
 ========================= */
 
-#gameGrid {
+:is(#gameGrid, #onlineGameGrid) {
     position: relative;
 
     width: 100%;
@@ -170,7 +170,7 @@ h2 span {
 
 /* Central axis */
 
-#gameGrid::before {
+:is(#gameGrid, #onlineGameGrid)::before {
     content: "";
     position: absolute;
 
@@ -717,4 +717,150 @@ footer {
 .action-button:disabled:hover {
     background: #191919;
     border-color: #333;
+}
+
+/* =========================
+   ONLINE GAME
+   ========================= */
+
+#onlineGame h2 {
+    font-size: clamp(28px, 6vw, 42px);
+    margin-bottom: 8px;
+}
+
+#onlineGameRoom {
+    color: #888;
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+
+#onlineRound {
+    color: #aaa;
+    font-size: 15px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    margin-bottom: 16px;
+}
+
+#onlineGameStatus {
+    font-size: 20px;
+    font-weight: bold;
+    min-height: 28px;
+    margin-bottom: 20px;
+}
+
+#onlineGameStatus.your-turn {
+    color: #4ade80;
+}
+
+#onlineGameStatus.waiting {
+    color: #aaa;
+}
+
+#onlineGameStatus.eliminated {
+    color: #ef4444;
+}
+
+#onlineGameStatus.win {
+    color: #4ade80;
+}
+
+#onlineGameStatus.lose {
+    color: #ef4444;
+}
+
+
+/* Disabled popcorns */
+
+#onlineGameGrid .game-button:disabled {
+    cursor: default;
+    opacity: 0.55;
+}
+
+#onlineGameGrid .game-button:disabled:hover {
+    transform: translate(-50%, -50%);
+}
+
+
+/* Game score */
+
+#onlineGameScore {
+    font-size: 16px;
+    font-weight: bold;
+    margin-top: 20px;
+}
+
+#onlineGameInfo {
+    color: #777;
+    font-size: 13px;
+    margin-top: 8px;
+}
+
+
+/* Online players */
+
+#onlineGamePlayers {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-width: 400px;
+    margin: 24px auto;
+}
+
+#onlineGamePlayers .player-current {
+    border-color: #4ade80;
+    background: rgba(74, 222, 128, 0.06);
+}
+
+.player-turn {
+    color: #4ade80;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.player-played {
+    color: #777;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.player-waiting {
+    color: #eab308;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.player-dead {
+    color: #ef4444;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.player-winner {
+    color: #4ade80;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+
+/* Delete room buttons */
+
+#deleteRoomButton,
+#onlineGameDeleteButton {
+    margin-top: 12px;
+    color: #ef4444;
+    border-color: #ef4444;
+}
+
+#deleteRoomButton:hover,
+#onlineGameDeleteButton:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+
+/* Ensure hidden elements stay hidden */
+
+[hidden] {
+    display: none !important;
 }
