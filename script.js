@@ -15,6 +15,7 @@ const WIN_EXPLOSION_COUNT = 100;
 const WIN_EXPLOSION_POWER = 1.5;
 
 const API_URL = "/api";
+const LOBBY_REFRESH_INTERVAL = 1000;
 
 
 // =========================
@@ -77,8 +78,12 @@ let gameOver;
 let currentRoom = null;
 let currentPlayerId = null;
 let currentNickname = null;
+
 let isHost = false;
 let onlineBusy = false;
+
+let lobbyTimer = null;
+let lobbyGeneration = 0;
 
 
 // =========================
@@ -224,11 +229,7 @@ function explodePopcorn(x, y, count = 100, power = 1) {
 
         particle.className = "popcorn-particle";
 
-        // Random direction
-
         const angle = Math.random() * Math.PI * 2;
-
-        // Random distance
 
         const distance =
             (100 + Math.random() * 500) * power;
@@ -236,18 +237,12 @@ function explodePopcorn(x, y, count = 100, power = 1) {
         const moveX = Math.cos(angle) * distance;
         const moveY = Math.sin(angle) * distance;
 
-        // Random appearance
-
         const size = 20 + Math.random() * 55;
         const rotation = Math.random() * 1440 - 720;
         const duration = 0.8 + Math.random() * 1.2;
 
-        // Starting position
-
         particle.style.left = `${x}px`;
         particle.style.top = `${y}px`;
-
-        // Animation properties
 
         particle.style.setProperty("--x", `${moveX}px`);
         particle.style.setProperty("--y", `${moveY}px`);
@@ -325,9 +320,6 @@ function startSoloGame() {
 
     restartButton.hidden = true;
 
-
-    // Create buttons
-
     for (let i = 0; i < BUTTON_COUNT; i++) {
 
         const button = document.createElement("button");
@@ -339,16 +331,10 @@ function startSoloGame() {
             `Popcorn ${i + 1}`
         );
 
-
-        // Custom image
-
         const img = document.createElement("img");
 
         img.alt = "";
         img.draggable = false;
-
-
-        // Fallback if image is missing
 
         img.addEventListener("error", () => {
 
@@ -361,9 +347,6 @@ function startSoloGame() {
         img.src = BUTTON_IMAGE;
 
         button.appendChild(img);
-
-
-        // Click event
 
         button.addEventListener("click", () => {
 
@@ -388,18 +371,12 @@ function handleClick(index, button) {
         return;
     }
 
-
-    // Trap
-
     if (index === trapIndex) {
 
         endGame(false);
         return;
 
     }
-
-
-    // Safe click
 
     safeClicks++;
 
@@ -409,9 +386,6 @@ function handleClick(index, button) {
     gameScore.textContent =
         `Safe clicks: ${safeClicks}/${BUTTON_COUNT - 1}`;
 
-
-    // Victory
-
     if (safeClicks === BUTTON_COUNT - 1) {
 
         endGame(true);
@@ -419,13 +393,7 @@ function handleClick(index, button) {
 
     }
 
-
-    // Popcorn sound
-
     playSound(POP_SOUND);
-
-
-    // Small popcorn explosion
 
     const rect = button.getBoundingClientRect();
 
@@ -450,22 +418,13 @@ function endGame(win) {
     const buttons =
         gameGrid.querySelectorAll(".game-button");
 
-
-    // Disable all buttons
-
     buttons.forEach(button => {
 
         button.disabled = true;
 
     });
 
-
-    // Reveal trap
-
     buttons[trapIndex].classList.add("trap");
-
-
-    // Victory
 
     if (win) {
 
@@ -486,9 +445,6 @@ function endGame(win) {
         gameGrid.classList.add("victory-glow");
 
     }
-
-
-    // Defeat
 
     else {
 
@@ -520,6 +476,10 @@ async function apiRequest(action, payload = {}) {
             "Content-Type": "application/json"
         },
 
+        cache: "no-store",
+
+        signal: AbortSignal.timeout(10000),
+
         body: JSON.stringify({
             ...payload,
             action
@@ -531,9 +491,13 @@ async function apiRequest(action, payload = {}) {
 
     if (!response.ok || data.error) {
 
-        throw new Error(
+        const error = new Error(
             data.error || "Server error"
         );
+
+        error.status = response.status;
+
+        throw error;
 
     }
 
@@ -676,57 +640,222 @@ function openLobby() {
 
     lobbyRoomName.textContent = currentRoom;
 
-    // Temporary local player display.
-    // Server synchronization will be added next.
-
-    renderLocalPlayer();
+    playerList.innerHTML = "";
 
     playerCount.textContent = "Players: --/10";
 
     lobbyStatus.textContent =
-        "Waiting for players...";
+        "Loading players...";
 
     startGameButton.hidden = !isHost;
     startGameButton.disabled = true;
+
+    startLobbyPolling();
 
 }
 
 
 // =========================
-// DISPLAY LOCAL PLAYER
+// START LOBBY POLLING
 // =========================
 
-function renderLocalPlayer() {
+function startLobbyPolling() {
 
-    playerList.innerHTML = "";
+    stopLobbyPolling();
 
-    const item = document.createElement("div");
-    item.className = "player-item";
+    refreshLobby(lobbyGeneration);
 
-    const name = document.createElement("span");
-    name.className = "player-name";
-    name.textContent = currentNickname;
+}
 
-    const role = document.createElement("span");
 
-    if (isHost) {
+// =========================
+// STOP LOBBY POLLING
+// =========================
 
-        role.className = "player-host";
-        role.textContent = "HOST • YOU";
+function stopLobbyPolling() {
 
-    }
+    lobbyGeneration++;
 
-    else {
+    if (lobbyTimer !== null) {
 
-        role.className = "player-you";
-        role.textContent = "YOU";
+        clearTimeout(lobbyTimer);
+        lobbyTimer = null;
 
     }
 
-    item.appendChild(name);
-    item.appendChild(role);
+}
 
-    playerList.appendChild(item);
+
+// =========================
+// REFRESH LOBBY
+// =========================
+
+async function refreshLobby(generation) {
+
+    if (generation !== lobbyGeneration ||
+        !currentRoom ||
+        !currentPlayerId) {
+
+        return;
+
+    }
+
+    try {
+
+        const data = await apiRequest("state", {
+
+            room: currentRoom,
+            playerId: currentPlayerId
+
+        });
+
+        // Ignore outdated responses
+
+        if (generation !== lobbyGeneration) {
+            return;
+        }
+
+        isHost = data.isHost;
+
+        renderPlayers(data.players);
+
+        playerCount.textContent =
+            `Players: ${data.playerCount}/10`;
+
+        startGameButton.hidden = !isHost;
+
+        // Game start is not implemented yet
+
+        startGameButton.disabled = true;
+
+        if (data.playerCount < 2) {
+
+            lobbyStatus.textContent =
+                "Waiting for more players...";
+
+        }
+
+        else if (isHost) {
+
+            lobbyStatus.textContent =
+                "Players connected. Ready to play!";
+
+        }
+
+        else {
+
+            lobbyStatus.textContent =
+                "Waiting for the host to start...";
+
+        }
+
+    }
+
+    catch (error) {
+
+        if (generation !== lobbyGeneration) {
+            return;
+        }
+
+        if (error.status === 403 ||
+            error.status === 404) {
+
+            leaveRoom();
+
+            setOnlineStatus(
+                error.message,
+                "error"
+            );
+
+            return;
+
+        }
+
+        lobbyStatus.textContent =
+            "Connection lost. Reconnecting...";
+
+        console.warn("Lobby refresh failed:", error);
+
+    }
+
+    finally {
+
+        if (generation === lobbyGeneration &&
+            currentRoom &&
+            currentPlayerId) {
+
+            lobbyTimer = setTimeout(() => {
+
+                refreshLobby(generation);
+
+            }, LOBBY_REFRESH_INTERVAL);
+
+        }
+
+    }
+
+}
+
+
+// =========================
+// DISPLAY PLAYERS
+// =========================
+
+function renderPlayers(players) {
+
+    const fragment = document.createDocumentFragment();
+
+    players.forEach(player => {
+
+        const item = document.createElement("div");
+
+        item.className = "player-item";
+
+        if (!player.alive) {
+
+            item.classList.add("player-eliminated");
+
+        }
+
+        const name = document.createElement("span");
+
+        name.className = "player-name";
+        name.textContent = player.nickname;
+
+        const role = document.createElement("span");
+
+        if (player.isHost) {
+
+            role.className = "player-host";
+
+            role.textContent = player.isYou
+                ? "HOST • YOU"
+                : "HOST";
+
+        }
+
+        else if (player.isYou) {
+
+            role.className = "player-you";
+            role.textContent = "YOU";
+
+        }
+
+        else {
+
+            role.className = "player-you";
+            role.textContent = "READY";
+
+        }
+
+        item.appendChild(name);
+        item.appendChild(role);
+
+        fragment.appendChild(item);
+
+    });
+
+    playerList.replaceChildren(fragment);
 
 }
 
@@ -737,12 +866,14 @@ function renderLocalPlayer() {
 
 function leaveRoom() {
 
+    stopLobbyPolling();
+
     // Server-side departure will be added next.
-    // For now, this only closes the local lobby.
 
     currentRoom = null;
     currentPlayerId = null;
     currentNickname = null;
+
     isHost = false;
 
     playerList.innerHTML = "";

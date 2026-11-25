@@ -1,5 +1,9 @@
-// GET : vérifier la connexion à la base de données
+// =========================
+// GET - DATABASE TEST
+// =========================
+
 export async function onRequestGet(context) {
+
     const result = await context.env.DB
         .prepare("SELECT COUNT(*) AS total FROM rooms")
         .first();
@@ -8,56 +12,67 @@ export async function onRequestGet(context) {
         status: "ok",
         rooms: result.total
     });
+
 }
 
 
-// POST : gérer les actions multijoueurs
+// =========================
+// POST - ONLINE ACTIONS
+// =========================
+
 export async function onRequestPost(context) {
+
     const { request, env } = context;
     const data = await request.json();
 
 
-    // ==========================================
-    // CRÉER UN SALON
-    // ==========================================
+    // =========================
+    // CREATE ROOM
+    // =========================
 
     if (data.action === "create") {
 
         const { nickname, room, password } = data;
 
-        // Vérifier le mot de passe
-        if (password !== env.ROOM_PASSWORD) {
+        if (!env.ROOM_PASSWORD ||
+            password !== env.ROOM_PASSWORD) {
+
             return Response.json({
-                error: "Mot de passe incorrect"
+                error: "Incorrect password"
             }, { status: 403 });
+
         }
 
-        // Vérifier les champs
         if (typeof room !== "string" ||
             typeof nickname !== "string" ||
-            !room.trim() || !nickname.trim()) {
+            !room.trim() || !nickname.trim() ||
+            room.trim().length > 30 ||
+            nickname.trim().length > 20) {
+
             return Response.json({
-                error: "Champs manquants"
+                error: "Invalid room name or nickname"
             }, { status: 400 });
+
         }
 
         const roomCode = room.trim().toLowerCase();
         const playerId = crypto.randomUUID();
 
-        // Vérifier si le salon existe déjà
         const existingRoom = await env.DB
             .prepare("SELECT code FROM rooms WHERE code = ?")
             .bind(roomCode)
             .first();
 
         if (existingRoom) {
+
             return Response.json({
-                error: "Ce salon existe déjà"
+                error: "This room already exists"
             }, { status: 409 });
+
         }
 
-        // Créer le salon et son premier joueur
         await env.DB.batch([
+
             env.DB.prepare(
                 "INSERT INTO rooms (code, current_turn) VALUES (?, ?)"
             ).bind(roomCode, playerId),
@@ -65,6 +80,7 @@ export async function onRequestPost(context) {
             env.DB.prepare(
                 "INSERT INTO players (id, room_code, nickname) VALUES (?, ?, ?)"
             ).bind(playerId, roomCode, nickname.trim())
+
         ]);
 
         return Response.json({
@@ -72,42 +88,46 @@ export async function onRequestPost(context) {
             room: roomCode,
             playerId: playerId
         });
+
     }
 
 
-    // ==========================================
-    // REJOINDRE UN SALON
-    // ==========================================
+    // =========================
+    // JOIN ROOM
+    // =========================
 
     if (data.action === "join") {
 
         const { nickname, room } = data;
 
-        // Vérifier les champs
         if (typeof room !== "string" ||
             typeof nickname !== "string" ||
-            !room.trim() || !nickname.trim()) {
+            !room.trim() || !nickname.trim() ||
+            room.trim().length > 30 ||
+            nickname.trim().length > 20) {
+
             return Response.json({
-                error: "Champs manquants"
+                error: "Invalid room name or nickname"
             }, { status: 400 });
+
         }
 
         const roomCode = room.trim().toLowerCase();
         const playerId = crypto.randomUUID();
 
-        // Vérifier que le salon existe
         const existingRoom = await env.DB
             .prepare("SELECT * FROM rooms WHERE code = ?")
             .bind(roomCode)
             .first();
 
         if (!existingRoom) {
+
             return Response.json({
-                error: "Salon introuvable"
+                error: "Room not found"
             }, { status: 404 });
+
         }
 
-        // Ajouter le joueur si le salon est disponible
         const result = await env.DB.prepare(`
             INSERT INTO players (id, room_code, nickname)
             SELECT ?, ?, ?
@@ -135,9 +155,11 @@ export async function onRequestPost(context) {
         ).run();
 
         if (result.meta.changes === 0) {
+
             return Response.json({
-                error: "Salon complet, partie commencée ou pseudo déjà utilisé"
+                error: "Room full, game started or nickname already used"
             }, { status: 409 });
+
         }
 
         return Response.json({
@@ -145,14 +167,118 @@ export async function onRequestPost(context) {
             room: roomCode,
             playerId: playerId
         });
+
     }
 
 
-    // ==========================================
-    // ACTION INCONNUE
-    // ==========================================
+    // =========================
+    // GET ROOM STATE
+    // =========================
+
+    if (data.action === "state") {
+
+        const { room, playerId } = data;
+
+        if (typeof room !== "string" ||
+            typeof playerId !== "string") {
+
+            return Response.json({
+                error: "Missing room or player ID"
+            }, { status: 400 });
+
+        }
+
+        const roomCode = room.trim().toLowerCase();
+
+
+        // Get room
+
+        const currentRoom = await env.DB
+            .prepare("SELECT * FROM rooms WHERE code = ?")
+            .bind(roomCode)
+            .first();
+
+        if (!currentRoom) {
+
+            return Response.json({
+                error: "Room no longer exists"
+            }, { status: 404 });
+
+        }
+
+
+        // Get players
+
+        const result = await env.DB
+            .prepare(`
+                SELECT id, nickname, alive
+                FROM players
+                WHERE room_code = ?
+                ORDER BY joined_at ASC, rowid ASC
+            `)
+            .bind(roomCode)
+            .all();
+
+        const players = result.results;
+
+
+        // Verify player membership
+
+        const currentPlayer = players.find(
+            player => player.id === playerId
+        );
+
+        if (!currentPlayer) {
+
+            return Response.json({
+                error: "You are no longer in this room"
+            }, { status: 403 });
+
+        }
+
+
+        // During the lobby, current_turn identifies the host
+
+        const hostId = currentRoom.current_turn;
+
+
+        // Return public player information
+
+        return Response.json({
+
+            status: "ok",
+
+            room: currentRoom.code,
+
+            roomStatus: currentRoom.status,
+
+            isHost: playerId === hostId,
+
+            playerCount: players.length,
+
+            players: players.map(player => ({
+
+                nickname: player.nickname,
+
+                alive: player.alive === 1,
+
+                isHost: player.id === hostId,
+
+                isYou: player.id === playerId
+
+            }))
+
+        });
+
+    }
+
+
+    // =========================
+    // UNKNOWN ACTION
+    // =========================
 
     return Response.json({
-        error: "Action inconnue"
+        error: "Unknown action"
     }, { status: 400 });
+
 }
