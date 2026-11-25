@@ -194,18 +194,37 @@ export async function onRequestPost(context) {
     // SOLO PASSWORD
     // =========================
 
-    if (action === "solo") {
+if (action === "solo") {
 
-        if (!env.ROOM_PASSWORD ||
-            password !== env.ROOM_PASSWORD) {
+    // Standard password
 
-            return error("Incorrect password", 403);
+    if (env.ROOM_PASSWORD &&
+        password === env.ROOM_PASSWORD) {
 
-        }
-
-        return success();
+        return success({
+            soundCategory: "lose"
+        });
 
     }
+
+
+    // Special password
+
+    if (env.SOLO_SPEC_PASSWORD &&
+        password === env.SOLO_SPEC_PASSWORD) {
+
+        return success({
+            soundCategory: "lose_spec"
+        });
+
+    }
+
+
+    // Incorrect password
+
+    return error("Incorrect password", 403);
+
+}
 
 
     // =========================

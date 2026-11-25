@@ -1,4 +1,3 @@
-
 import json
 from pathlib import Path
 
@@ -7,7 +6,7 @@ SOUNDS_DIR = ROOT / "sounds"
 
 sounds = {}
 
-for category in ["win", "lose"]:
+for category in ["win", "lose", "lose_spec"]:
 
     folder = SOUNDS_DIR / category
     folder.mkdir(parents=True, exist_ok=True)

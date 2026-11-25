@@ -120,8 +120,11 @@ let lobbyGeneration = 0;
 
 let sounds = {
     win: [],
-    lose: []
+    lose: [],
+    lose_spec: []
 };
+
+let loseSoundCategory = "lose";
 
 let currentAudio = null;
 
@@ -148,6 +151,10 @@ fetch("sounds.json")
 
         sounds.lose = Array.isArray(data.lose)
             ? data.lose
+            : [];
+
+        sounds.lose_spec = Array.isArray(data.lose_spec)
+            ? data.lose_spec
             : [];
 
         console.log("Sounds loaded:", sounds);
@@ -512,7 +519,7 @@ function endGame(win) {
         gameStatus.textContent = "GAME OVER";
         gameStatus.className = "lose";
 
-        playRandomSound("lose");
+        playRandomSound(loseSoundCategory);
 
         shakeGrid(gameGrid);
 
@@ -1558,9 +1565,13 @@ soloButton.addEventListener("click", async () => {
 
     try {
 
-        await apiRequest("solo", {
-            password
-        });
+        const data = await apiRequest("solo", {
+    password
+});
+
+loseSoundCategory = data.soundCategory === "lose_spec"
+    ? "lose_spec"
+    : "lose";
 
         mainMenu.hidden = true;
         soloGame.hidden = false;
