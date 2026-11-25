@@ -1542,12 +1542,40 @@ function startOnlineGame() {
 // SOLO NAVIGATION
 // =========================
 
-soloButton.addEventListener("click", () => {
+soloButton.addEventListener("click", async () => {
 
-    mainMenu.hidden = true;
-    soloGame.hidden = false;
+    if (soloButton.disabled) {
+        return;
+    }
 
-    startSoloGame();
+    const password = prompt("Enter password:");
+
+    if (password === null) {
+        return;
+    }
+
+    soloButton.disabled = true;
+
+    try {
+
+        await apiRequest("solo", {
+            password
+        });
+
+        mainMenu.hidden = true;
+        soloGame.hidden = false;
+
+        startSoloGame();
+
+    } catch (error) {
+
+        alert(error.message);
+
+    } finally {
+
+        soloButton.disabled = false;
+
+    }
 
 });
 
